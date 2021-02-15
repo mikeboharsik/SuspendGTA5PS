@@ -68,14 +68,15 @@
             } else {
               setStatus('Waiting for user input');
             }
-            fetching = false;
             return;
           })
           .catch(e => {
             setStatus('error');
             console.error(e);
-            fetching = false;
           })
+          .finally(() => {
+            fetching = false;
+          });
       }
     </script>
   </body>
