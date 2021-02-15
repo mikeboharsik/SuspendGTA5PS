@@ -32,7 +32,9 @@
       }
 
       #status {
+        height: 5em;
         margin-top: 1em;
+        text-align: center;
       }
     </style>
   </head>
@@ -62,7 +64,7 @@
         return await fetch('/suspend', { method: 'post' })
           .then(async res => { 
             if (!res.ok) {
-              setStatus(`Received a non-success response: ${await res.text()}`);
+              setStatus(`Received a non-success response:<br>${await res.text()}`);
             } else {
               setStatus('Waiting for user input');
             }

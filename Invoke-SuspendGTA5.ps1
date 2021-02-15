@@ -38,8 +38,6 @@ Param(
 function main {
   InjectSuspendMethodsIntoScope
 
-  $indexPage = Get-Content ("$PSScriptRoot\index.html")
-
   try {
     $script:shouldQuit = $false
 
@@ -48,7 +46,7 @@ function main {
         Handler = {
           Param($req, $res)
 
-          SetResponseContent $res $indexPage
+          SetResponseContent $res (Get-Content "$PSScriptRoot\index.html")
         }
         Method = "GET"
         Path = "/"
