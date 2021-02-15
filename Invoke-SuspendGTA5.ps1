@@ -6,16 +6,13 @@ Param(
   [switch] $LocalOnly
 )
 
-function UserIsAdmin {
-  $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-  return $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
-
 . "$PSScriptRoot\util\http.ps1"
 . "$PSScriptRoot\util\win32.ps1"
 
 function main {
   InjectSuspendMethodsIntoScope
+
+  $indexPage = Get-Content ("$PSScriptRoot\index.html")
 
   try {
     $script:shouldQuit = $false
@@ -24,6 +21,8 @@ function main {
       @{
         Handler = {
           Param($req, $res)
+
+          SetResponseContent $res $indexPage
         }
         Method = "GET"
         Path = "/"
@@ -32,20 +31,24 @@ function main {
         Handler = {
           Param($req, $res)
 
-          $script:shouldQuit = $true;
+          $script:shouldQuit = $true
         }
-        Method = "GET"
+        Method = "POST"
         Path = "/quit"
       },
       @{
         Handler = {
           Param($req, $res, $params)
             
-          Suspend "discord"
-          Start-Sleep -Seconds 15
-          Unsuspend "discord"
+          if (Suspend "discord") {
+            Start-Sleep -Seconds 15
+            Unsuspend "discord" | Out-Null
+          } else {
+            $res.StatusCode = 404;
+            SetResponseContent $res "Couldn't find process to suspend"
+          }
         }
-        Method = "GET"
+        Method = "POST"
         Path = "/suspend"
       }
     )
@@ -53,6 +56,8 @@ function main {
     $listener = [System.Net.HttpListener]::New() 
     
     ConfigureBindings $listener
+
+    Write-Verbose "Registered routes: $(($routes | ForEach-Object { Select-Object -InputObject $_ -ExpandProperty Path }) | ConvertTo-Json)"
 
     $listener.Start()
 
