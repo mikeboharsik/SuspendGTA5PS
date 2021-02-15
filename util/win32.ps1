@@ -19,14 +19,19 @@ function Suspend {
     [string] $processName
   )
 
+  $ret = $false
+
   $processes = Get-Process | Where-Object { $_.ProcessName -Like "*$processName*" }
 
   foreach ($process in $processes) {
     $processId = $process.Id
     [Win32]::DebugActiveProcess($processId) | Out-Null
+    $ret = $true
   }
 
-  Write-Host "Processes suspended: $($processes.Length)"
+  Write-Verbose "Processes suspended: $($processes.Length)"
+
+  return $ret
 }
 
 function Unsuspend {
@@ -34,12 +39,17 @@ function Unsuspend {
     [string] $processName
   )
 
+  $ret = $false
+
   $processes = Get-Process | Where-Object { $_.ProcessName -Like "*$processName*" }
 
   foreach ($process in $processes) {
     $processId = $process.Id
     [Win32]::DebugActiveProcessStop($processId) | Out-Null
+    $ret = $true
   }
 
-  Write-Host "Processes unsuspended: $($processes.Length)"
+  Write-Verbose "Processes unsuspended: $($processes.Length)"
+
+  return $ret
 }

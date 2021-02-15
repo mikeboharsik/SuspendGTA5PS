@@ -1,32 +1,56 @@
-function Get-IpAddress {
-  if ((ipconfig | Select-String 'IPv4 Address') -match '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') {
-    return $Matches[0]
+function UserIsAdmin {
+  $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+  return $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Get-IpAddresses {
+  $addresses = (ipconfig | Select-String 'IPv4 Address')
+
+  if ($addresses) {
+    return $addresses | ForEach-Object {
+      Write-Verbose $_
+      if ($_ -match '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}') {
+        if ($Matches[0]) {
+          return $Matches[0]
+        }
+      }
+
+      return $null
+    }
   }
 
   return $null
 }
 
-function Get-DnsSuffix {
-  if ((ipconfig | Select-String ".com") -Match "\S+\.com") {
-    return $Matches[0]
+function Get-DnsSuffixes {
+  $suffixes = (ipconfig | Select-String "DNS Suffix  . : \S")
+  if ($suffixes) {
+    return $suffixes | ForEach-Object {
+      Write-Verbose $_
+      if ($_ -match "[^\d\s]+\.[^\d\s]+$") {
+        return $Matches[0]
+      }
+
+      return $null
+    }
   }
 
   return $null
 }
 
-function Get-IpAddressBinding {
-  $ip = Get-IpAddress
-  if ($ip) {
-    return "http://$($ip):$Port/"
+function Get-IpAddressBindings {
+  $ips = Get-IpAddresses
+  if ($ips) {
+    return $ips | ForEach-Object { "http://$($_):$Port/" }
   }
 
-  throw "Couldn't get IP address"
+  throw "Couldn't get IP addresses"
 }
 
-function Get-HostnameBinding {
-  $suffix = Get-DnsSuffix
-  if ($suffix) {
-    return "http://$($env:ComputerName).$($suffix):$Port/"
+function Get-HostnameBindings {
+  $suffixes = Get-DnsSuffixes
+  if ($suffixes) {
+    return $suffixes | ForEach-Object { "http://$($env:ComputerName).$($_):$Port/" }
   }
 
   throw "Couldn't get DNS suffix"
@@ -41,13 +65,19 @@ function ConfigureBindings ($listener) {
 
   if ($userIsAdmin -and !$LocalOnly) {
     try {
-      $binding = Get-HostnameBinding
-      $listener.Prefixes.Add($binding)
-      Write-Host "Bound listener to $binding"
+      $bindings = Get-HostnameBindings
+      Write-Verbose "Got hostname bindings '$bindings'"
+      foreach ($binding in $bindings) {
+        $listener.Prefixes.Add($binding)
+        Write-Host "Bound listener to $binding"
+      }
 
-      $binding = Get-IpAddressBinding
-      $listener.Prefixes.Add($binding)
-      Write-Host "Bound listener to $binding"
+      $bindings = Get-IpAddressBindings
+      Write-Verbose "Got IP address bindings '$bindings'"
+      foreach ($binding in $bindings) {
+        $listener.Prefixes.Add($binding)
+        Write-Host "Bound listener to $binding"
+      }
     } catch {
       Write-Error $_
 
@@ -98,7 +128,7 @@ function ProcessRequest($listener, $routes) {
 
   Write-Host "$($req.UserHostAddress) => $method $($rawUrl)" -f 'mag'
 
-  $route = $routes | Where-Object { ($_.Method -eq $method) -and ($rawUrl -Match $_.Path) }
+  $route = $routes | Where-Object { ($_.Method -eq $method) -and ($rawUrl -eq $_.Path) }
   Write-Verbose "Matched '$rawUrl' to '$($route.Path)'"
 
   if ($route) {
@@ -111,6 +141,8 @@ function ProcessRequest($listener, $routes) {
   }
 
   $res.OutputStream.Close()
+
+  Write-Verbose "Returning $($res.StatusCode)"
 
   if ($script:shouldQuit) {
     $listener.Stop()
