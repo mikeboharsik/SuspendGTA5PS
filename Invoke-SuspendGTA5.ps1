@@ -40,9 +40,9 @@ function main {
         Handler = {
           Param($req, $res, $params)
             
-          if (Suspend "discord") {
+          if (Suspend "gta5") {
             Start-Sleep -Seconds 15
-            Unsuspend "discord" | Out-Null
+            Unsuspend "gta5"
           } else {
             $res.StatusCode = 404;
             SetResponseContent $res "Couldn't find process to suspend"

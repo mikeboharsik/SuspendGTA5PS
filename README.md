@@ -12,4 +12,5 @@
     * If you'd like to be able to suspend over your own local network, open the PowerShell window as an administrator
 3. Run `./Invoke-SuspendGTA5.ps1`
 4. Launch GTA5
-5. Whenever you are in an unfair situation, you can kick everyone from your session by bringing up a web browser and navigating to `http://localhost:8080/suspend`; this will suspend GTA5 for 15 seconds and then unsuspend it, leaving you alone in your session to continue as you were
+5. Whenever you are in an unfair situation, you can kick everyone from your session by bringing up a web browser and navigating to the webpage at `http://localhost:8080`; click the button therein to trigger a suspension that will last for 15 seconds
+    * If you have run the script as an administrator, you can access the suspend webpage on your local network (e.g. via your phone's web browser) at the bindings listed in the script startup output
