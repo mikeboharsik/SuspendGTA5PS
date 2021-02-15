@@ -65,15 +65,15 @@ function ConfigureBindings ($listener) {
 
   if ($userIsAdmin -and !$LocalOnly) {
     try {
-      $bindings = Get-HostnameBindings
-      Write-Verbose "Got hostname bindings '$bindings'"
+      $bindings = Get-IpAddressBindings
+      Write-Verbose "Got IP address bindings '$bindings'"
       foreach ($binding in $bindings) {
         $listener.Prefixes.Add($binding)
         Write-Host "Bound listener to $binding"
       }
 
-      $bindings = Get-IpAddressBindings
-      Write-Verbose "Got IP address bindings '$bindings'"
+      $bindings = Get-HostnameBindings
+      Write-Verbose "Got hostname bindings '$bindings'"
       foreach ($binding in $bindings) {
         $listener.Prefixes.Add($binding)
         Write-Host "Bound listener to $binding"
